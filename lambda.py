@@ -5,37 +5,48 @@ import requests
 
 from bs4 import BeautifulSoup
 
-def remove_parenthetical_phrases(string):
-    output = ""
-    stack = []
-    for char in string:
-        if char == '(':
-            stack.append('(')
-        elif char == ')':
-            if stack:
-                stack.pop()
-            else:
-                stack.append(')')
-        elif not stack:
-            output += char
-    return BeautifulSoup(output, 'html.parser')
+pattern = r"/wiki/(.*)"
+
+
+            
     
 def get_next_page(elements):
-    for element in elements:
-        # Makes element withouth parentheses.
-        new_el = remove_parenthetical_phrases(str(element))
+    # Elements is list of `p` elements
+    
+    for p in elements:
+        # Stringify the element to detect it
+        p = str(p.encode().decode())
 
-        # Gets all `a` tagged elements.
-        a_list = new_el.select('a')
-        
-        for a in a_list:
-            # Get proper links, not references to parts of page.
-            if a.has_attr('href') and a['href'][0] == '/':
-                try:
-                    # href is in format '/wiki/...'. This is getting the page directly.
-                    return a['href'][6:]
-                except:
-                    continue
+        last_five_chars = ''
+        page_title = ''
+        building_url = False
+        opend = False
+        parens = 0
+        for c in p:
+            last_five_chars = (last_five_chars + c)[-6:]
+            if building_url and not opend:
+                if c == '"':
+                    match = re.search(pattern, page_title)
+                        # Extract the captured group (text after "/wiki/")
+                    if match:
+                        extracted_text = match.group(1)
+                        page_title = extracted_text
+                        print(page_title)
+                        break
+                else:
+                    page_title += c
+            elif c == '(':
+                parens +=1
+                opend = True
+            elif c == ')' and opend:
+                parens -= 1
+                if parens== 0:
+                    opend=False
+                    page_title = ""
+            if last_five_chars == 'href="' and not opend:
+                building_url = True
+        if page_title:
+            return page_title
 
 def lambda_handler(event, context):
     try:

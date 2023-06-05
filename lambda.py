@@ -21,14 +21,9 @@ def remove_parenthetical_phrases(string):
     return BeautifulSoup(output, 'html.parser')
     
 def get_next_page(elements):
-    for element in elements:        
-        
-        # p elements with content do not have classes.
-        if element.has_attr('class'):
-            continue
-        
+    for element in elements:
         new_el = remove_parenthetical_phrases(str(element))
-        a_list = element.select('a')
+        a_list = new_el.select('a')
         for a in a_list:
             if a.has_attr('href') and not a.has_attr('class') and a['href'][0] == '/':
                 try:
@@ -39,10 +34,14 @@ def get_next_page(elements):
 def lambda_handler(event, context):
 
     try:
-        # TODO: get page from user
-        page = original_page = 'Semantics'
+        # Extract path parameters
+        path_parameters = event['pathParameters']
+    
+        # Assuming 'page' is the name of your URL parameter
+        page = original_page = path_parameters['page']
         
         pages = []
+
         while page and page != "Philosophy" and page not in pages:
             pages.append(page)
             

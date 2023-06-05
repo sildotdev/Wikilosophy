@@ -22,11 +22,17 @@ def remove_parenthetical_phrases(string):
     
 def get_next_page(elements):
     for element in elements:
+        # Makes element withouth parentheses.
         new_el = remove_parenthetical_phrases(str(element))
+
+        # Gets all `a` tagged elements.
         a_list = new_el.select('a')
+        
         for a in a_list:
-            if a.has_attr('href') and not a.has_attr('class') and a['href'][0] == '/':
+            # Get proper links, not references to parts of page.
+            if a.has_attr('href') and a['href'][0] == '/':
                 try:
+                    # href is in format '/wiki/...'. This is getting the page directly.
                     return a['href'][6:]
                 except:
                     continue

@@ -32,7 +32,6 @@ def get_next_page(elements):
                     continue
 
 def lambda_handler(event, context):
-
     try:
         # Extract path parameters
         path_parameters = event['pathParameters']

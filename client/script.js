@@ -2,6 +2,7 @@ const searchInput = document.querySelector('#wiki-search');
 const suggestionsList = document.querySelector('#suggestions');
 const searchBtn = document.querySelector('#search-btn');
 const resultsModal = document.querySelector('#results-modal');
+const modalBodyThingy = document.querySelector('#modal-body-content-thing');
 
 searchInput.addEventListener('input', function() {
   if (this.value.length > 0) {
@@ -41,6 +42,21 @@ var search = function() {
     // const myModal = new bootstrap.Modal(document.getElementById('results-modal'));
     const myModalAlternative = new bootstrap.Modal('#results-modal');
     myModalAlternative.show();
+
+    fetch(`https://okqct25rme.execute-api.us-east-2.amazonaws.com/${searchInput.value}`)
+    .then((response) => {
+        console.log("cool beans");
+        console.log(response.body);
+        // its a readable stream so we need to do this
+        response.body.getReader().read().then((result) => {
+            // read as text
+            const decoder = new TextDecoder('utf-8');
+            const text = decoder.decode(result.value);
+            console.log(text);
+
+            modalBodyThingy.innerHTML = text;
+        });
+    });
 }
 
 searchInput.onkeypress = function(event) {

@@ -22,49 +22,40 @@ def get_next_page(paragraphs):
     page_title: (string)
         The first string 
     """
-
+    
     for p in paragraphs:
-        #convert to string
+        # Convert to string
         p = p.prettify()
-
-        page_title = ""
-        next_page  = ""
-        last_six_chars = ""
-        parsing_link = False
-
-        in_paren = False
-        parens = 0
-
-        for char in p:
-            last_six_chars = (last_six_chars + char)[-6:]
-            
-            if parsing_link and not in_paren:
-                if char == '"':
-                # Signifies end of link
-                    match = re.search(wiki_link_pattern, page_title)
-                    if match:
-                        next_page = match.group(1)
-                        print(next_page)
-                        break
-                else:
-                    page_title += char
-
-            elif char == '(':
-                parens += 1
-                in_paren = True
-
-            elif char == ')' and in_paren:
-                parens -= 1
-                if parens == 0:
-                    in_paren = False
-                    page_title = ""
-
-            if last_six_chars == 'href="' and not in_paren:
-                parsing_link = True
         
-        # If a page title has been found, return
-        # Otherwise check next paragraph
-        if next_page: return next_page
+        # Used to find 'href="', i.e. a link
+        last_six_chars = ''
+        
+        parens = 0
+        for i,char in enumerate(p):
+            last_six_chars = (last_six_chars + char)[-6:]
+            if char == '(':
+                parens += 1
+            elif char == ')':
+                parens -= 1
+            elif parens == 0 and last_six_chars == 'href="':
+                # Finds end quote for 'href="', i.e. end of link
+                end_quote_idx = p.find('"', i+1)
+                
+                # p[i+1:end_quote_idx] is what's between the quotes in 'href="..."'
+                href_link = p[i+1:end_quote_idx]
+
+                # A valid link has a form of `/wiki/<something>`
+                match = re.search(wiki_link_pattern, href_link)
+                
+                # Is valid link
+                if match:
+                    page_title = match.group(1)
+                    # print(page_title)
+                    return page_title
+                # else, keep looking
+                
+    # Return empty string if not found
+    return ''
 
 def lambda_handler(event, context):
     """
@@ -99,7 +90,6 @@ def lambda_handler(event, context):
             List of pages that take the path or message indicating a loop when
             trying to find path or if an error took place.
     """
-
     try:
         # Extract path parameters
         path_parameters = event['pathParameters']
@@ -107,31 +97,35 @@ def lambda_handler(event, context):
         # Assuming 'page' is the name of your URL parameter
         page = original_page = path_parameters['page']
         
-        pages = [page]
+        # Path of pages to Philosophy.
+        pages = []
 
         while page and page != "Philosophy" and page not in pages:
             pages.append(page)
             
+            # Scrape the Wikipedia page
             url = f'https://en.wikipedia.org/wiki/{page}'
             response = requests.get(url)
             soup = BeautifulSoup(response.content, 'html.parser')
-            paragraphs = soup.select('div.mw-parser-output p')
+            elements = soup.select('div.mw-parser-output p')
             
-            page = get_next_page(paragraphs)
-        
+            page = get_next_page(elements)
+            
+        # Reached Philosophy!
         if page == 'Philosophy':
             pages.append(page)
             return {
                 'statusCode': 200,
                 'body': json.dumps(pages)
             }
+        # Did not reach Philosophy!
         else:
             return {
                 'statusCode': 200,
                 'body': json.dumps(f'{original_page} does not lead to Philosophy!')
             }
-    except:
+    except Exception as e:
         return {
             'statusCode': 400,
-            'body': json.dumps('Something failed.')
+            'body': json.dumps(str(e))
         }

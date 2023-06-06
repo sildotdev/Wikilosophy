@@ -107,9 +107,9 @@ def lambda_handler(event, context):
             url = f'https://en.wikipedia.org/wiki/{page}'
             response = requests.get(url)
             soup = BeautifulSoup(response.content, 'html.parser')
-            elements = soup.select('div.mw-parser-output p')
+            paragraphs = soup.select('div.mw-parser-output p')
             
-            page = get_next_page(elements)
+            page = get_next_page(paragraphs)
             
         # Reached Philosophy!
         if page == 'Philosophy':
